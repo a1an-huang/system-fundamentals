@@ -1,0 +1,994 @@
+############################ CHANGE THIS FILE AS YOU DEEM FIT ############################
+############################ Add more names if needed ####################################
+############################ Change network if needed ####################################
+.data
+Friend: .asciiz "FRIEND"
+Friendd: .asciiz "FREINDD"
+Name: .asciiz "NAME"
+Nane: .asciiz "NANE"
+Joeyy: .asciiz "Joeyy"
+Joey: .asciiz "Joey"
+Alit: .asciiz "Alit"
+Veen: .asciiz "Veen"
+Joe: .asciiz "Joe"
+space: .asciiz ""
+Bob: .asciiz "Bob"
+Mo: .asciiz "Mo"
+Harry: .asciiz "Harry"
+Jack: .asciiz "Jack"
+Jake: .asciiz "Jake"
+Ilan: .asciiz "Ilan"
+Ryan: .asciiz "Ryan"
+.align 2
+Network:
+  .word 7   #total_nodes
+  .word 10   #total_edges
+  .word 4   #size_of_node
+  .word 12  #size_of_edge
+  .word 0   #curr_num_of_nodes
+  .word 0   #curr_num_of_edges
+   # set of nodes
+  .byte 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
+   # set of edges
+  .word 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120
+
+TestCase: .asciiz"Running case #"
+TestCaseFail: .asciiz "Did not expect the following output: "
+Bullet: .asciiz " - "
+
+.macro ss (%reg)
+# Stores the given register to the stack.
+addi $sp, $sp, -4
+sw %reg, 0($sp)
+.end_macro
+
+.macro rs (%reg)
+# Pops from the stack and restores to the given register.
+lw %reg, 0($sp)
+addi $sp, $sp, 4
+.end_macro
+
+.macro syscalli (%v0i)
+# Performs syscall with a one-line macro and a provided immediate for $v0.
+li $v0, %v0i
+syscall
+.end_macro
+
+.macro print_int (%int)
+# Prints int from the given register.
+move $a0, %int
+syscalli 1
+.end_macro
+
+.macro print_char (%char)
+# Prints char from the least significant byte of the given register.
+move $a0, %char
+syscalli 11
+.end_macro
+
+.macro print_ln ()
+li $a0, 0xA
+print_char $a0
+.end_macro
+
+.macro print_str_label (%str_label)
+la $a0, %str_label
+syscalli 4
+.end_macro
+
+.macro print_str_len (%str_addr, %len)
+# Prints the string from the given str_addr with a specified length.
+ss $t0
+ss $t1
+ss $t2
+ss $t3
+
+move $t2, %str_addr
+move $t3, %len
+
+# for ($t0=0; $t0<%len; $t0++)
+move $t0, $0
+print_str_for1:
+# Branch if $t0>=%len
+bge $t0, $t3, print_str_for1_done
+	add $t1, $t2, $t0
+	lbu $t1, 0($t1)
+	move $a0, $t1
+	syscalli 11
+addi $t0, $t0, 1
+j print_str_for1
+print_str_for1_done:
+rs $t3
+rs $t2
+rs $t1
+rs $t0
+.end_macro
+
+.macro print_bullet ()
+print_str_label Bullet
+.end_macro
+
+.macro print_case (%im)
+# Prints the test case being run.
+print_str_label TestCase
+li $a0, %im
+print_int $a0
+print_ln
+.end_macro
+
+.macro print_case_fail (%output)
+# Prints that a case failed, printing the unexpected int output.
+print_str_label TestCaseFail
+print_int %output
+print_ln
+.end_macro
+
+.macro assert_eq (%reg, %im)
+# Asserts that register matches the given immediate.
+li $t0, %im
+beq %reg, $t0, success
+print_case_fail %reg
+success:
+.end_macro
+
+.text
+main:
+#write test code:
+        #To use these test cases assemble the program and put breakpointsn at every line you see move $_, $v0. This will but the return value of the fucntion in the $v0.
+        #You can then run your program, stopping at those breakpoints and make sure the value in $_ matches what the comment says it should have.
+	print_case 1
+	la $a0, Network #1
+        jal create_person #creates first person
+        move $s1, $v0 #$s1 should contain 0x1001006c which is the address of the first person
+        assert_eq $s1, 0x1001006c
+        
+        print_case 2
+        la $a0, Network#2
+  	move $a1, $s1	
+        la $a2, Nane
+        la $a3, Joey
+        jal add_person_property #should fail property_name isnt NAME 
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0
+        assert_eq $s0, 0
+        
+        print_case 3
+        la $a0, Network#3
+  	move $a1, $s1
+        la $a2, Name
+        la $a3, Joey
+        jal add_person_property #should name first person as Joey
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1
+        assert_eq $s0, 1
+        
+        print_case 4
+        la $a0, Network#4
+        jal create_person #creates second person
+        move $s2, $v0 #$s2 should have 0x10010070 which is the address of the second person
+        assert_eq $s2, 0x10010070
+        
+        print_case 5
+        la $a0, Network#5
+        move $a1, $s2
+        la $a2, Name
+        la $a3, Joeyy 
+        jal add_person_property #should fail to name person 2 Joeyy since 5 > 4 (length of string greater then node size)
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0
+        assert_eq $s0, 0
+        
+        print_case 6
+        la $a0, Network#6
+        move $a1, $s2
+        la $a2, Name
+        la $a3, Joey 
+        jal add_person_property #should fail to name person 2 Joey cause that name already exists
+        li $s0, 2
+        move $s0, $v0 #$ss should have 0
+        assert_eq $s0, 0
+        
+        print_case 7
+        la $a0, Network#7
+        move $a1, $s2
+        la $a2, Name
+        la $a3, Alit 
+        jal add_person_property #should name second person as Anit
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1
+        assert_eq $s0, 1
+        
+        print_case 8
+        la $a0, Network#8
+        jal create_person #creates third person
+        move $s3, $v0 #$s3 contains address of third person: 0x10010074
+        assert_eq $s3, 0x10010074
+        
+        print_case 9
+        la $a0, Network#9
+        jal create_person #creates fourth person
+        move $s4, $v0 #$s4 contains address of fourth person: 0x10010078
+        assert_eq $s4, 0x10010078
+        
+        print_case 10
+        la $a0, Network#10
+        jal create_person #creates fifth person
+        move $s5, $v0 #$s5 contains address of fifth person: 0x1001007c
+        assert_eq $s5, 0x1001007c
+        
+        print_case 11
+        la $a0, Network#11
+        jal create_person #creates sixth person
+        move $s6, $v0 #$s6 contains address of sixth person: 0x10010080
+        assert_eq $s6, 0x10010080
+        
+        print_case 12
+        la $a0, Network#12
+        jal create_person #creates seventh (last) person
+        move $s7, $v0 #$s6 contains address of seventh (last) person: 0x10010084
+        assert_eq $s7, 0x10010084
+        
+        print_case 13
+        la $a0, Network#13
+        jal create_person #Tries to create 8th person, which should fail since 7 is max total nodes
+        li $s0, 2
+        move $s0, $v0 #$s0 should be -1
+        assert_eq $s0, -1
+        
+        print_case 14
+        la $a0, Network#14
+        move $a1, $s4
+        la $a2, Name
+        la $a3, Bob 
+        jal add_person_property #should name fourth person as Bob
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1
+        assert_eq $s0, 1
+        
+        print_case 15
+        la $a0, Network#15
+        move $a1, $s7
+        la $a2, Name
+        la $a3, Ryan
+        jal add_person_property #should name seventh person as Ryan
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1
+        assert_eq $s0, 1
+        
+        print_case 16
+        la $a0, Network#16
+        move $a1, $s6
+        la $a2, Name
+        la $a3, Jake
+        jal add_person_property #should name sixth person as Jake
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1
+        assert_eq $s0, 1
+        
+        print_case 17
+        la $a0, Network#17
+        li $a1, 0x10000084
+        la $a2, Name
+        la $a3, Ilan
+        jal add_person_property #should fail to name person Ilan since address of Node doesnt exist (too high a value)
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0
+        assert_eq $s0, 0
+        
+        print_case 18
+        la $a0, Network#18
+        li $a1, 0x10000000
+        la $a2, Name
+        la $a3, Ilan
+        jal add_person_property #should fail to name person Ilan since address of Node doesnt exist (too low a value)
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0
+        assert_eq $s0, 0
+  	
+  	print_case 19
+  	la $a0, Network#19
+        move $a1, $s3
+        la $a2, Name
+        la $a3, Ilan
+        jal add_person_property #should name third person as Ilan
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1
+        assert_eq $s0, 1
+        
+        print_case 20
+        la $a0, Network#20
+        move $a1, $s5
+        la $a2, Name
+        la $a3, Mo
+        jal add_person_property #should name fifth person as Mo
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1
+        assert_eq $s0, 1
+        
+        print_case 21
+        la $a0, Network#21
+        move $a1, $s5
+        la $a2, Name
+        la $a3, Harry
+        jal add_person_property #should fail to change the name of fifth person from Mo to Harry cause 5 > 4 (length of string greater then node size)
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0
+        assert_eq $s0, 0
+        
+        print_case 22
+        la $a0, Network#22
+        move $a1, $s1
+        la $a2, Name
+        la $a3, Mo
+        jal add_person_property #should fail to change the name of first person from Joey to Mo cause the name Mo already exists
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0
+        assert_eq $s0, 0
+        
+        print_case 23
+        la $a0, Network#23
+        move $a1, $s5
+        la $a2, Name
+        la $a3, Jack
+        jal add_person_property #should change the name of fifth person from Mo to Jack
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1
+        assert_eq $s0, 1
+        
+        print_case 24
+        la $a0, Network#24
+        move $a1, $s2
+        la $a2, Name
+        la $a3, Mo
+        jal add_person_property #should change the name of the second person from Anit to Mo
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1
+        assert_eq $s0, 1
+        
+        #At this point we have a full network of people nodes. We have Joey(0x1001006c), Mo, Ilan, Bob, Jack, Jake, and Ryan(0x10010084)
+        
+        print_case 25
+        la $a0, Network#25
+        la $a1, Alit
+        jal get_person
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0
+        assert_eq $s0, 0
+        
+        print_case 26
+        la $a0, Network#26
+        la $a1, Joeyy
+        jal get_person
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 name is too long
+        assert_eq $s0, 0
+        
+        print_case 27
+        la $a0, Network#27
+        la $a1, Joe
+        jal get_person
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 name is a substring of name in network but not full name
+        assert_eq $s0, 0
+        
+        print_case 28
+        la $a0, Network#28
+        la $a1, Mo
+        jal get_person
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0x10010070
+        assert_eq $s0, 0x10010070
+        
+        print_case 29
+        la $a0, Network#29
+        la $a1, Ryan
+        jal get_person
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0x10010084
+        assert_eq $s0, 0x10010084
+        
+        #all the above was testing for parts 1, 2, 3.
+        
+        print_case 30
+        la $a0, Network#30
+        la $a1, Mo
+        la $a2, Bob
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 since we cannot add a relation to a relation that does not exist (we have yet to even make a relation)
+        assert_eq $s0, 0
+        
+        print_case 31
+        la $a0, Network#31
+        la $a1, Mo
+        la $a2, Bob
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) So far we have 1 relation
+        assert_eq $s0, 1
+        
+        print_case 32
+        la $a0, Network#32
+        la $a1, Harry
+        la $a2, Ryan
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 since Harry is not in our network
+        assert_eq $s0, 0
+        
+        print_case 33
+        la $a0, Network#33
+        la $a1, Veen
+        la $a2, Alit
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 since Veen and Anit are not in our our network
+        assert_eq $s0, 0
+        
+        print_case 34
+        la $a0, Network#34
+        la $a1, Ryan
+        la $a2, Mo
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) Now we have 2 relations
+        assert_eq $s0, 1
+        
+        print_case 35
+        la $a0, Network#35
+        la $a1, Mo
+        la $a2, Bob
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 since Mo and Bob already have a relation
+        assert_eq $s0, 0
+        
+        print_case 36
+        la $a0, Network#36
+        la $a1, Joey
+        la $a2, Joey
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 since a person cannot be related to themselves
+        assert_eq $s0, 0
+        
+        print_case 37
+        la $a0, Network#37
+        la $a1, Bob
+        la $a2, Mo
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 since a relation already exists
+        assert_eq $s0, 0
+        
+        print_case 38
+        la $a0, Network#38
+        la $a1, Mo
+        la $a2, Jack
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) Now we have 3 relations
+        assert_eq $s0, 1
+        
+        print_case 39
+        la $a0, Network#39
+        la $a1, Jack
+        la $a2, Jake
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) 4 relations
+        assert_eq $s0, 1
+        
+        print_case 40
+        la $a0, Network#40
+        la $a1, Joey
+        la $a2, Jake
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) 5 relations
+        assert_eq $s0, 1
+        
+        print_case 41
+        la $a0, Network#41
+        la $a1, Joey
+        la $a2, Ryan
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) 6 relations
+        assert_eq $s0, 1
+        
+        print_case 42
+        la $a0, Network#42
+        la $a1, Mo
+        la $a2, Mo
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 since a person can't be related to themselves
+        assert_eq $s0, 0
+        
+        print_case 43
+        la $a0, Network#43
+        la $a1, Bob
+        la $a2, Ilan
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) 7 relations
+        assert_eq $s0, 1
+        
+        print_case 44
+        la $a0, Network#44
+        la $a1, Bob
+        la $a2, Jack
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) 8 relations
+        assert_eq $s0, 1
+        
+        print_case 45
+        la $a0, Network#45
+        la $a1, Jake
+        la $a2, Ilan
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) 9 relations
+        assert_eq $s0, 1
+        
+        print_case 46
+        la $a0, Network#46
+        la $a1, Jake
+        la $a2, Ilan
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 now we have 9 relations with 1/9 of them being a friend relation
+        assert_eq $s0, 1
+        
+        print_case 47
+        la $a0, Network#47
+        la $a1, Jake
+        la $a2, Jake
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 since you cant be related with yourself so this relationship doesnt exist to add the friend property to
+        assert_eq $s0, 0
+        
+        print_case 48
+        la $a0, Network#48
+        la $a1, Jack
+        la $a2, Joey
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 (relation added sucessfully) now we have 10 relations
+        assert_eq $s0, 1
+        
+        print_case 49
+        la $a0, Network#49
+        la $a1, Ilan
+        la $a2, Joey
+        jal add_relation
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 Even though this relation does not exist we are at the edge capacity (10)
+        assert_eq $s0, 0
+        
+        print_case 50
+        la $a0, Network#50
+        la $a1, Ryan
+        la $a2, Bob
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 since this relation doesnt exist
+        assert_eq $s0, 0
+        
+        print_case 51
+        la $a0, Network#51
+        la $a1, Ryan
+        la $a2, Mo
+        la $a3, Friend
+        li $s0, 21
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 because the property value (21 in this case) does not equal 1
+        assert_eq $s0, 0
+        
+        print_case 52
+        la $a0, Network#52
+        la $a1, Ryan
+        la $a2, Mo
+        la $a3, Friendd
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 0 because the property name ("FRIENDD" in this case) is not "FRIEND"
+        assert_eq $s0, 0
+        
+        print_case 52
+        la $a0, Network#52
+        la $a1, Ryan
+        la $a2, Mo
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 now 2/10 relations are friend relations
+        assert_eq $s0, 1
+        
+        print_case 53
+        la $a0, Network#53
+        la $a1, Bob
+        la $a2, Mo
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 now 3/10 relations are friend relations
+        assert_eq $s0, 1
+        
+        print_case 54
+        la $a0, Network#54
+        la $a1, Jake
+        la $a2, Jack
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 now 4/10 relations are friend relations
+        assert_eq $s0, 1
+        
+        print_case 55
+        la $a0, Network#55
+        la $a1, Joey
+        la $a2, Jack
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 now 5/10 relations are friend relations
+        assert_eq $s0, 1
+        
+        print_case 56
+        la $a0, Network#56
+        la $a1, Jake
+        la $a2, Joey
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 now 6/10 relations are friend relations
+        assert_eq $s0, 1
+        
+        print_case 57
+        la $a0, Network#57
+        la $a1, Ilan
+        la $a2, Jake
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 but we should still onyl have that 6/10 relations are friend relations since Ilan and Jake were friends before
+        assert_eq $s0, 1
+        
+        #testing for distant friends when haveing 2 groups of friends (2 trees) Bob-Mo-Ryan and Ilan-Jake-Jack-Joey 
+        #at this point Bob and Ilan are not friends which is why these groups are seperated and people from each group such as Mo could not be a distant friend of Jack 
+        
+        print_case 69
+        la $a0, Network#69
+        la $a1, Mo
+        la $a2, Jack
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 0 since Mo and Jake are not distant friends through Bob and Ilan
+        assert_eq $s0, 0
+        
+        print_case 70
+        la $a0, Network#70
+        la $a1, Joey
+        la $a2, Ryan
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 0 since Joey and Ryan are not distant friends
+        assert_eq $s0, 0
+        
+        print_case 71
+        la $a0, Network#71
+        la $a1, Ilan
+        la $a2, Bob
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 0 since Ilan and Bob are not distant friends
+        assert_eq $s0, 0
+        
+        print_case 72
+        la $a0, Network#72
+        la $a1, Jake
+        la $a2, Ryan
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 0 since Jake and Ryan are not distant friends
+        assert_eq $s0, 0
+        
+        print_case 73
+        la $a0, Network#73
+        la $a1, Ryan
+        la $a2, Jake
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 0 since Ryan and Jake are not distant friends
+        assert_eq $s0, 0
+        
+        
+        #testing for distant friends when haveing 1 groups of friends (1 trees) Bob-Mo-Ryan-Ilan-Jake-Jack-Joey 
+        #at this point calling distant friends at any 2 people who are in the network and not friends themself should be distant
+        
+        print_case 58
+        la $a0, Network#58
+        la $a1, Ilan
+        la $a2, Bob
+        la $a3, Friend
+        li $s0, 1
+        addi $sp, $sp, -4
+        sw $s0, 0($sp)
+        jal add_relation_property
+        addi $sp, $sp, 4
+        li $s0, 2
+        move $s0, $v0 #$s0 should have 1 now we have that 7/10 relations are friend relations
+        assert_eq $s0, 1
+        
+        print_case 59
+        la $a0, Network#59
+        la $a1, Ilan
+        la $a2, Bob
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 0 since they are immediate friends, not distant friends
+        assert_eq $s0, 0
+        
+        print_case 60
+        la $a0, Network#60
+        la $a1, Veen
+        la $a2, Bob
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be -1 since name1 (Veen) does not exist in the network
+        assert_eq $s0, -1
+        
+        print_case 61
+        la $a0, Network#61
+        la $a1, Bob
+        la $a2, Veen
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be -1 since name2 (Veen) does not exist in the network
+        assert_eq $s0, -1
+        
+        print_case 62
+        la $a0, Network#62
+        la $a1, Bob
+        la $a2, Veen
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be -1 since name2 (Veen) does not exist in the network
+        assert_eq $s0, -1
+        
+        print_case 63
+        la $a0, Network#63
+        la $a1, Mo
+        la $a2, Ilan
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 1 since Mo and Ilan are distant friends through Bob
+        assert_eq $s0, 1
+        
+        print_case 64
+        la $a0, Network#64
+        la $a1, Mo
+        la $a2, Jake
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 1 since Mo and Jake are distant friends through Bob and Ilan
+        assert_eq $s0, 1
+        
+        print_case 65
+        la $a0, Network#65
+        la $a1, Joey
+        la $a2, Ryan
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 1 since Joey and Ryan are distant friends through Mo, Bob, Ilan, and Jake
+        assert_eq $s0, 1
+        
+        print_case 69696969
+        la $a0, Network#IDK
+        la $a1, Ryan
+        la $a2, Jack
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 1 since Jack and Ryan are distant friends through Mo, Bob, Ilan, and Jake
+        assert_eq $s0, 1
+        
+        print_case 66
+        la $a0, Network#66
+        la $a1, Joey
+        la $a2, Jake
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 0 since they are immediate friends, not distant friends
+        assert_eq $s0, 0
+        
+        print_case 67
+        la $a0, Network#67
+        la $a1, Joey
+        la $a2, Jack
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 0 since they are immediate friends, not distant friends
+        assert_eq $s0, 0
+        
+        print_case 68
+        la $a0, Network#68
+        la $a1, Jack
+        la $a2, Joey
+        jal is_a_distant_friend
+        li $s0, 2
+        move $s0, $v0 #$s0 should be 0 since they are immediate friends, not distant friends
+        assert_eq $s0, 0
+        
+        
+        #This prints the network
+        #li $t0, 0x10010000
+        #li $t1, 0x10011000
+        #li $v0, 1
+        #loop:
+        #beq $t0, $t1, exit
+        #lw $a0 0($t0)
+        #syscall
+        #addi $t0, $t0, 4
+        #j loop
+        
+        la $a0, Network
+        jal print_network
+        
+        #Use a text comparer on what your program prints with this:
+        #116243309411744226061313424722130864032445417611162756430170179225612415450817955823195306604917011399681867120750110729635712918708311632108655795915418016750821801538048181672355713757599697233913710412710203669076228493185187847364510101801675082170153607418518818102685011042685011121268501124268501104126850110426850111602685011162685011201268501100268501120126850110026850112402685011122685011081268501112268501116026850112026850110812685011162685011001313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899100101102103104105106107108109110111112113114115116117118119120000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+         
+
+exit:
+	li $v0, 10
+	syscall
+
+
+print_network:
+# Formats and prints the given Network struct.
+# $a0: Network struct
+	ss $s0
+	ss $s1
+	ss $s2
+	ss $s3
+	ss $s4
+	
+	
+	## $s0 = Network struct pointer
+	move $s0, $a0
+	
+	## $s1 = total_nodes
+	lw $s1, 0($s0)
+	
+	## $s2 = total_edges
+	lw $s2, 4($s0)
+	
+	## $s3 = size_of_node
+	lw $s3, 8($s0)
+	
+	## $s4 = size_of_edge
+	lw $s4, 12($s0)
+	
+	# Print the first 6 ints of Network struct
+	# for ($t0=0; $t0<6; $t0++)
+	move $t0, $0
+	li $t1, 6
+	print_network_for1:
+	# Branch if $t0>=6
+	bge $t0, $t1, print_network_for1_done
+		lw $t2, 0($s0)
+		print_int $t2
+		addi $s0, $s0, 4
+		print_ln
+	addi $t0, $t0, 1
+	j print_network_for1
+	print_network_for1_done:
+	
+	print_ln
+	
+	# Print each name from list of nodes
+	# for ($t0=0; $t0<$s1, total_nodes; $t0++)
+	move $t0, $0
+	print_network_for2:
+	# Branch if $t0>=$s1
+	bge $t0, $s1, print_network_for2_done
+		print_bullet
+		print_str_len $s0, $s3
+		add $s0, $s0, $s3
+		print_ln
+	addi $t0, $t0, 1
+	j print_network_for2
+	print_network_for2_done:
+	
+	print_ln
+	
+	# Print each edge struct
+	# for ($t0=0; $t0<$s2; $t0++)
+	move $t0, $0
+	print_network_for3:
+	# Branch if $t0>=$s2
+	bge $t0, $s2, print_network_for3_done
+		print_bullet
+		lw $t1, 0($s0)
+		lw $t2, 4($s0)
+		lw $t3, 8($s0)
+		beqz $t1, print_network_for3_if1
+		beqz $t2, print_network_for3_if1
+		
+		print_str_len $t1, $s3
+		print_bullet
+		print_str_len $t2, $s3
+		print_bullet
+		print_int $t3
+		
+		print_network_for3_if1:
+		print_ln
+		addi $s0, $s0, 12
+	addi $t0, $t0, 1
+	j print_network_for3
+	print_network_for3_done:
+	
+	rs $s4
+	rs $s3
+	rs $s2
+	rs $s1
+	rs $s0
+	jr $ra
+
+
+.include "hw4.asm"
